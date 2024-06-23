@@ -1,0 +1,43 @@
+name: rust toolchain setup
+description: Installs a Rust toolchain via rustup
+
+inputs:
+  toolchain:
+    description: Rustup toolchain specification to install
+    required: false
+    default: stable
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        : set cargo home env
+        if [ -z "${CARGO_HOME+set}" ]; then
+          echo "CARGO_HOME=$HOME/.cargo" >> $GITHUB_ENV
+        fi
+    - shell: bash
+      run: |
+        : make sure rustup is installed
+        if ! command -v rustup &>/dev/null; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+          echo "$CARGO_HOME/bin" >> $GITHUB_PATH
+        fi
+    - shell: bash
+      run: |
+        : install toolchain
+        rustup toolchain install ${{inputs.toolchain}}
+        rustup default ${{inputs.toolchain}}
+
+    - shell: bash
+      run: |
+        : enable cargo colors
+        if [ -z "${CARGO_TERM_COLOR+set}" ]; then
+          echo "CARGO_TERM_COLOR=always" >> $GITHUB_ENV
+        fi
+    - shell: bash
+      run: |
+        : disable incremental compilation
+        if [ -z "${CARGO_INCREMENTAL+set}" ]; then
+          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
+        fi
